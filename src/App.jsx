@@ -16,8 +16,8 @@ const FERIADOS = [
 ];
 
 // ── TOKENS DE ACCESO ──────────────────────────────────────────────────────────
-const TOKENS_VALIDOS = ['lb-admin-2026', 'lb-equipo-luisi', 'lb-equipo-rafa'];
-const ADMINS = ['lb-admin-2026', 'lb-equipo-rafa'];
+const TOKENS_VALIDOS = ['1417'];
+const ADMINS = ['1417'];
 
 // ── COLORES POR TIPO ──────────────────────────────────────────────────────────
 const TIPOS = {
@@ -276,7 +276,7 @@ function Calendario({ token, esAdmin, onLogout }) {
     <div style={{ height:'100dvh', display:'flex', flexDirection:'column', background:'#0f0f0f', overflow:'hidden' }}>
 
       {/* HEADER */}
-      <div style={{ padding:'52px 20px 12px', background:'#0f0f0f', borderBottom:'1px solid rgba(197,160,89,0.15)', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
+      <div style={{ padding:'44px 20px 10px', background:'#0f0f0f', borderBottom:'1px solid rgba(197,160,89,0.15)', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
         <div>
           <div style={{ fontSize:'10px', letterSpacing:'3px', color:'#c5a059', fontWeight:700, textTransform:'uppercase', marginBottom:'2px' }}>Luisina Bagnaroli</div>
           <div style={{ fontSize:'22px', fontWeight:900, color:'#fff', letterSpacing:'-0.5px' }}>Calendario</div>
@@ -295,7 +295,7 @@ function Calendario({ token, esAdmin, onLogout }) {
       </div>
 
       {/* MES NAVEGACIÓN */}
-      <div style={{ padding:'14px 20px 10px', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
+      <div style={{ padding:'8px 20px 6px', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
         <button onClick={() => cambiarMes(-1)} style={{ background:'rgba(197,160,89,0.12)', border:'1px solid rgba(197,160,89,0.25)', borderRadius:'50%', width:'38px', height:'38px', color:'#c5a059', fontSize:'1.1rem', display:'flex', alignItems:'center', justifyContent:'center' }}>‹</button>
         <div style={{ textAlign:'center' }}>
           <div style={{ fontSize:'26px', fontWeight:900, color:'#fff', letterSpacing:'-1px', lineHeight:1 }}>{MESES[mes]}</div>
@@ -305,7 +305,7 @@ function Calendario({ token, esAdmin, onLogout }) {
       </div>
 
       {/* LEYENDA */}
-      <div style={{ padding:'0 20px 8px', display:'flex', gap:'12px', flexWrap:'wrap', flexShrink:0 }}>
+      <div style={{ padding:'0 20px 4px', display:'flex', gap:'12px', flexWrap:'wrap', flexShrink:0 }}>
         {[['#2d6a4f','Evento'],['#457b9d','Reunión'],['#6c757d','Propuesta'],['#c1121f','Feriado'],['#e9c46a','Notas']].map(([c,l]) => (
           <div key={l} style={{ display:'flex', alignItems:'center', gap:'5px' }}>
             <div style={{ width:'8px', height:'8px', borderRadius:'50%', background:c }}/>
@@ -316,7 +316,7 @@ function Calendario({ token, esAdmin, onLogout }) {
 
       {/* GRILLA CALENDARIO */}
       <div
-        style={{ flex:1, padding:'0 10px', overflow:'hidden', animation: dirAnim ? `${dirAnim} 0.35s ease` : 'none' }}
+        style={{ flex:1, padding:'0 10px 4px', overflow:'hidden', display:'flex', flexDirection:'column', animation: dirAnim ? `${dirAnim} 0.35s ease` : 'none' }}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
@@ -328,7 +328,7 @@ function Calendario({ token, esAdmin, onLogout }) {
         </div>
 
         {/* Días */}
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:'3px', height:'calc(100% - 28px)' }}>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:'2px', gridAutoRows:'1fr' }}>
           {Array.from({ length: totalCeldas }, (_, i) => {
             let diaNum, esMes = true;
             if (i < primerDia) { diaNum = diasAnterior - primerDia + i + 1; esMes = false; }
@@ -374,12 +374,11 @@ function Calendario({ token, esAdmin, onLogout }) {
                   cursor: esMes ? 'pointer' : 'default',
                   position:'relative',
                   minHeight:'0',
-                  aspectRatio:'1',
                   transition:'transform 0.1s ease',
                 }}
               >
                 <span style={{
-                  fontSize: tieneEventoConfirmado ? '17px' : '15px',
+                  fontSize: tieneEventoConfirmado ? '15px' : '13px',
                   fontWeight: (esHoy || tieneEventoConfirmado) ? 900 : 600,
                   color: esFeriado && !tieneEventoConfirmado ? '#ff6b6b' : numColor,
                   textDecoration: tieneCancelado && !tieneEventoConfirmado ? 'line-through' : 'none',
@@ -390,8 +389,8 @@ function Calendario({ token, esAdmin, onLogout }) {
                 {/* Puntos indicadores */}
                 {esMes && (tieneNotas || esFeriado) && (
                   <div style={{ display:'flex', gap:'2px', marginTop:'2px' }}>
-                    {tieneNotas && <div style={{ width:'4px', height:'4px', borderRadius:'50%', background:'#e9c46a' }}/>}
-                    {esFeriado && !tieneEventoConfirmado && <div style={{ width:'4px', height:'4px', borderRadius:'50%', background:'#ff6b6b' }}/>}
+                    {tieneNotas && <div style={{ width:'3px', height:'3px', borderRadius:'50%', background:'#e9c46a' }}/>}
+                    {esFeriado && !tieneEventoConfirmado && <div style={{ width:'3px', height:'3px', borderRadius:'50%', background:'#ff6b6b' }}/>}
                   </div>
                 )}
               </div>
