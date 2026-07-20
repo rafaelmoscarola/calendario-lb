@@ -1,4 +1,10 @@
 {
+  "crons": [
+    {
+      "path": "/api/cron-notif",
+      "schedule": "0 * * * *"
+    }
+  ],
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]

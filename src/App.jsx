@@ -124,6 +124,33 @@ function Calendario({ token, esAdmin, onLogout }) {
   const [swipeStart, setSwipeStart] = useState(null);
   const [dirAnim, setDirAnim] = useState(''); // slideInRight | slideInLeft
 
+  // Suscribirse a notificaciones push
+  useEffect(() => {
+    const suscribirse = async () => {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        const existente = await reg.pushManager.getSubscription();
+        if (existente) return; // Ya suscripto
+
+        const permiso = await Notification.requestPermission();
+        if (permiso !== 'granted') return;
+
+        const sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: import.meta.env.VITE_VAPID_PUBLIC_KEY
+        });
+
+        await fetch('/api/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscription: sub })
+        });
+      } catch(e) {}
+    };
+    setTimeout(suscribirse, 2000);
+  }, []);
+
   // Cargar eventos del calendario (colección propia)
   useEffect(() => {
     const haceUnAnioMedio = new Date();
