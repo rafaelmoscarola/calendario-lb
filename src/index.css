@@ -1,0 +1,38 @@
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+:root {
+  --negro: #0f0f0f;
+  --negro2: #141414;
+  --negro3: #1a1a1a;
+  --dorado: #c5a059;
+  --dorado-claro: #e8c97a;
+  --blanco: #f9f7f4;
+  --verde: #2d6a4f;
+  --verde2: #40916c;
+  --azul: #1d3557;
+  --azul2: #457b9d;
+  --gris: #495057;
+  --rojo: #c1121f;
+  --violeta: #6a0572;
+  --amarillo: #e9c46a;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: var(--negro);
+  color: #fff;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+button { font-family: inherit; cursor: pointer; border: none; outline: none; }
+input, textarea, select { font-family: inherit; outline: none; }
+
+/* Animaciones */
+@keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes slideInLeft { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes slideInUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pulseDorado { 0%,100% { box-shadow: 0 0 0 0 rgba(197,160,89,0.4); } 50% { box-shadow: 0 0 0 10px rgba(197,160,89,0); } }
