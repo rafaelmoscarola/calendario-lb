@@ -64,7 +64,7 @@ export default async function handler(req, res) {
 
         const payload = JSON.stringify({
           title: `${v.emoji} En ${v.label} — ${ev.titulo}`,
-          body: ev.hora ? `${ev.hora} hs${ev.precio ? ` · $${ev.precio}` : ''}${ev.notas ? `\n${ev.notas.split('\n')[0]}` : ''}` : (ev.notas?.split('\n')[0] || ''),
+          body: ev.hora ? `${ev.hora} hs${ev.precio ? ` · $${ev.precio}` : ''}` : (ev.notas?.split('\n')[0] || ''),
           url: 'https://calendario-lb.vercel.app'
         });
 
