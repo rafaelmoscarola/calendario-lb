@@ -34,27 +34,51 @@ export default async function handler(req, res) {
     const en8 = new Date(ahora); en8.setDate(en8.getDate() + 8);
     const en8Str = en8.toISOString().slice(0,10);
 
-    const snap = await db.collection('cal_eventos')
+    // Cargar eventos del calendario propio
+    const snapCal = await db.collection('cal_eventos')
       .where('fecha', '>=', hoyStr)
       .where('fecha', '<=', en8Str)
       .where('cancelado', '==', false)
       .get();
+    const eventosCal = snapCal.docs.map(d => ({
+      id: `cal_${d.id}`,
+      titulo: d.data().titulo,
+      fecha: d.data().fecha,
+      hora: d.data().hora,
+      precio: d.data().precio,
+      notas: d.data().notas,
+    }));
 
-    const eventos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    // Cargar eventos de la app principal
+    const snapApp = await db.collection('eventos')
+      .where('fecha', '>=', hoyStr)
+      .where('fecha', '<=', en8Str)
+      .get();
+    const eventosApp = snapApp.docs.map(d => ({
+      id: `app_${d.id}`,
+      titulo: d.data().nombre || d.data().titulo || 'Evento',
+      fecha: d.data().fecha,
+      hora: d.data().hora || '12:00',
+      precio: null,
+      notas: null,
+    }));
+
+    const todos = [...eventosCal, ...eventosApp];
     const enviadas = [];
 
-    for (const ev of eventos) {
+    const ventanas = [
+      { min: 7*24*60, label: '7 días', emoji: '📅' },
+      { min: 24*60,   label: '1 día',  emoji: '⚠️' },
+      { min: 3*60,    label: '3 horas', emoji: '🔔' },
+      { min: 60,      label: '1 hora',  emoji: '🚨' },
+    ];
+
+    for (const ev of todos) {
+      if (!ev.fecha) continue;
       const [y,m,d] = ev.fecha.split('-').map(Number);
       const [hh,mm] = (ev.hora || '12:00').split(':').map(Number);
       const fechaEv = new Date(y, m-1, d, hh, mm);
       const diffMin = (fechaEv - ahora) / 60000;
-
-      const ventanas = [
-        { min: 7*24*60, label: '7 días', emoji: '📅' },
-        { min: 24*60,   label: '1 día',  emoji: '⚠️' },
-        { min: 3*60,    label: '3 horas', emoji: '🔔' },
-        { min: 60,      label: '1 hora',  emoji: '🚨' },
-      ];
 
       for (const v of ventanas) {
         if (diffMin < v.min - 30 || diffMin > v.min + 30) continue;
@@ -64,7 +88,7 @@ export default async function handler(req, res) {
 
         const payload = JSON.stringify({
           title: `${v.emoji} En ${v.label} — ${ev.titulo}`,
-          body: ev.hora ? `${ev.hora} hs${ev.precio ? ` · $${ev.precio}` : ''}` : (ev.notas?.split('\n')[0] || ''),
+          body: ev.hora && ev.hora !== '12:00' ? `${ev.hora} hs${ev.precio ? ` · $${ev.precio}` : ''}` : (ev.notas?.split('\n')[0] || ''),
           url: 'https://calendario-lb.vercel.app'
         });
 
@@ -83,6 +107,7 @@ export default async function handler(req, res) {
         enviadas.push(`${ev.titulo} - ${v.label}`);
       }
     }
+
     res.status(200).json({ ok: true, enviadas });
   } catch(e) {
     res.status(500).json({ error: e.message });
