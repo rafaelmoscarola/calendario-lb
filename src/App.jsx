@@ -568,7 +568,7 @@ function Campo({ label, valor }) {
 }
 
 // ── FORMULARIO CREAR / EDITAR ─────────────────────────────────────────────────
-function FormEvento({ evento, fechaInicial, onVolver, onGuardar }) {
+function FormEvento({ evento, fechaInicial, productos = [], onVolver, onGuardar }) {
   const [tipo, setTipo] = useState(evento?.tipo || 'evento');
   const [titulo, setTitulo] = useState(evento?.titulo || '');
   const [fecha, setFecha] = useState(evento?.fecha || fechaInicial || hoy());
@@ -576,6 +576,9 @@ function FormEvento({ evento, fechaInicial, onVolver, onGuardar }) {
   const [precio, setPrecio] = useState(evento?.precio || '');
   const [notas, setNotas] = useState(evento?.notas || '');
   const [guardando, setGuardando] = useState(false);
+  const [itemsAlquiler, setItemsAlquiler] = useState(evento?.itemsAlquiler || []);
+  const [descuentoAlquiler, setDescuentoAlquiler] = useState(evento?.descuentoAlquiler || '');
+  const [envioAlquiler, setEnvioAlquiler] = useState(evento?.envioAlquiler || '');
 
   const esEdicion = !!evento;
 
