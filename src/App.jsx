@@ -251,9 +251,14 @@ function Calendario({ token, esAdmin, onLogout }) {
   };
 
   // Próximos eventos (solo del calendario propio, desde hoy)
-  const proximos = eventos
-    .filter(ev => ev.fecha >= hoyStr && !ev.cancelado)
-    .slice(0, 5);
+  // Propuestas de alquiler pendientes
+  const propuestasAlquilerProx = propuestas
+    .filter(p => p.fecha >= hoyStr && p.tipo === 'alquiler')
+    .map(p => ({ ...p, _esPropAlq: true, tipo: 'alquiler', titulo: p.cliente || p.titulo || 'Propuesta alquiler' }));
+
+  const proximos = [...eventos.filter(ev => ev.fecha >= hoyStr && !ev.cancelado), ...propuestasAlquilerProx]
+    .sort((a, b) => a.fecha.localeCompare(b.fecha))
+    .slice(0, 7);
 
   if (pantalla === 'productos') {
     return <PantallaProductos productos={productos} onVolver={() => setPantalla('calendario')} />;
@@ -267,6 +272,7 @@ function Calendario({ token, esAdmin, onLogout }) {
       onEditar={() => setPantalla('editar')}
       onCancelar={async () => {
         await updateDoc(doc(db, 'cal_eventos', eventoSeleccionado.id), { cancelado: true });
+        await enviarNotifInmediata(`❌ Cancelado: ${eventoSeleccionado.titulo}`, `Fecha: ${eventoSeleccionado.fecha}`);
         setPantalla('calendario');
       }}
       onEliminar={async () => {
@@ -307,6 +313,10 @@ function Calendario({ token, esAdmin, onLogout }) {
           modificadoPor: token,
           modificadoEn: new Date().toISOString(),
         });
+        await enviarNotifInmediata(
+          `✏ Modificado: ${datos.titulo}`,
+          `Fecha: ${datos.fecha}${datos.hora ? ' � ' + datos.hora + ' hs' : ''}`
+        );
         setEventoSeleccionado({ ...eventoSeleccionado, ...datos });
         setPantalla('ver');
       }}
@@ -450,24 +460,65 @@ function Calendario({ token, esAdmin, onLogout }) {
       {proximos.length > 0 && (
         <div style={{ padding:'12px 16px', background:'#111', borderTop:'1px solid rgba(255,255,255,0.06)', flexShrink:0, maxHeight:'200px', overflowY:'auto' }}>
           <div style={{ fontSize:'10px', letterSpacing:'2px', color:'#c5a059', fontWeight:700, textTransform:'uppercase', marginBottom:'10px' }}>Próximos</div>
-          {proximos.map(ev => {
+          {proximos.map((ev, evIdx) => {
             const tipo = TIPOS[ev.tipo] || TIPOS.otro;
             const [, m, d] = ev.fecha.split('-');
+            const esPropAlq = !!ev._esPropAlq;
             return (
-              <div
-                key={ev.id}
-                onClick={() => { setEventoSeleccionado(ev); setPantalla('ver'); }}
-                style={{ display:'flex', gap:'12px', alignItems:'center', marginBottom:'10px', cursor:'pointer' }}
-              >
-                <div style={{ width:'42px', height:'42px', borderRadius:'12px', background:tipo.bg, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                  <span style={{ fontSize:'16px', fontWeight:900, color:'#fff', lineHeight:1 }}>{d}</span>
-                  <span style={{ fontSize:'9px', color:'rgba(255,255,255,0.7)', textTransform:'uppercase', letterSpacing:'0.5px' }}>{MESES[parseInt(m)-1].slice(0,3)}</span>
+              <div key={ev.id || ev._docId || evIdx} style={{ display:'flex', gap:'8px', alignItems:'center', marginBottom:'10px' }}>
+                <div
+                  onClick={() => { if (!esPropAlq) { setEventoSeleccionado(ev); setPantalla('ver'); } }}
+                  style={{ display:'flex', gap:'10px', alignItems:'center', flex:1, minWidth:0, cursor: esPropAlq ? 'default' : 'pointer' }}
+                >
+                  <div style={{ width:'42px', height:'42px', borderRadius:'12px', background: esPropAlq ? 'rgba(64,145,108,0.2)' : tipo.bg, border: esPropAlq ? '1px dashed rgba(64,145,108,0.6)' : 'none', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                    <span style={{ fontSize:'15px', fontWeight:900, color: esPropAlq ? 'rgba(255,255,255,0.45)' : '#fff', lineHeight:1 }}>{d}</span>
+                    <span style={{ fontSize:'9px', color:'rgba(255,255,255,0.5)', textTransform:'uppercase', letterSpacing:'0.5px' }}>{MESES[parseInt(m)-1].slice(0,3)}</span>
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:'9px', color: esPropAlq ? 'rgba(64,145,108,0.8)' : tipo.color === '#2d6a4f' ? '#40916c' : tipo.color === '#1d3557' ? '#90caf9' : '#c5a059', fontWeight:700, letterSpacing:'1px', textTransform:'uppercase', marginBottom:'2px' }}>
+                      {esPropAlq ? '○ PROPUESTA ALQUILER' : `${tipo.emoji} ${tipo.label}`}
+                    </div>
+                    <div style={{ fontSize:'13px', fontWeight:700, color: esPropAlq ? 'rgba(255,255,255,0.55)' : '#fff', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{ev.titulo}</div>
+                    {ev.precio && <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.35)' }}>${Number(ev.precio).toLocaleString('es-AR')}</div>}
+                  </div>
                 </div>
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontSize:'9px', color:tipo.color === '#2d6a4f' ? '#40916c' : tipo.color === '#1d3557' ? '#90caf9' : '#c5a059', fontWeight:700, letterSpacing:'1px', textTransform:'uppercase', marginBottom:'2px' }}>{tipo.emoji} {tipo.label}</div>
-                  <div style={{ fontSize:'14px', fontWeight:700, color:'#fff', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{ev.titulo}</div>
-                  {ev.precio && <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.4)' }}>${ev.precio}</div>}
-                </div>
+                {esPropAlq && (
+                  <div style={{ display:'flex', gap:'4px', flexShrink:0 }}>
+                    <button
+                      onClick={async () => {
+                        if (!window.confirm('¿Confirmar alquiler? Los precios quedarán fijos.')) return;
+                        await addDoc(collection(db, 'cal_eventos'), {
+                          tipo: 'alquiler',
+                          titulo: ev.titulo,
+                          fecha: ev.fecha,
+                          hora: ev.hora || '',
+                          precio: ev.precio || '',
+                          notas: ev.notas || '',
+                          itemsAlquiler: ev.itemsAlquiler || [],
+                          descuentoAlquiler: ev.descuentoAlquiler || '',
+                          envioAlquiler: ev.envioAlquiler || '',
+                          creadoPor: token,
+                          creadoEn: new Date().toISOString(),
+                          cancelado: false,
+                        });
+                        await enviarNotifInmediata(`✅ Alquiler confirmado: ${ev.titulo}`, `Fecha: ${ev.fecha}`);
+                      }}
+                      style={{ padding:'6px 9px', borderRadius:'8px', background:'rgba(45,106,79,0.3)', border:'1px solid #40916c', color:'#40916c', fontSize:'0.72rem', fontWeight:800, cursor:'pointer' }}
+                    >
+                      ✓
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (!window.confirm('¿Eliminar esta propuesta?')) return;
+                        const docId = ev._docId || ev.id;
+                        if (docId) await deleteDoc(doc(db, 'propuestas', docId)).catch(() => {});
+                      }}
+                      style={{ padding:'6px 9px', borderRadius:'8px', background:'rgba(193,18,31,0.15)', border:'1px solid rgba(193,18,31,0.4)', color:'#ff6b6b', fontSize:'0.72rem', fontWeight:800, cursor:'pointer' }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })}
