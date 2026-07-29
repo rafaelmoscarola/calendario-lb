@@ -281,6 +281,7 @@ function Calendario({ token, esAdmin, onLogout }) {
   if (pantalla === 'crear') {
     return <FormEvento
       fechaInicial={diaSeleccionado || hoyStr}
+      productos={productos}
       onVolver={() => setPantalla('calendario')}
       onGuardar={async (datos) => {
         await addDoc(collection(db, 'cal_eventos'), {
@@ -298,6 +299,7 @@ function Calendario({ token, esAdmin, onLogout }) {
     return <FormEvento
       evento={eventoSeleccionado}
       fechaInicial={eventoSeleccionado.fecha}
+      productos={productos}
       onVolver={() => setPantalla('ver')}
       onGuardar={async (datos) => {
         await updateDoc(doc(db, 'cal_eventos', eventoSeleccionado.id), {
