@@ -763,8 +763,9 @@ function PantallaProductos({ productos, onVolver }) {
   const generarPdf = () => {
     const sel = productos.filter(p => selPdf.includes(p.id));
     if (!sel.length) return alert('Seleccioná al menos un producto');
-    import('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js').then(m => {
-      const { jsPDF } = m.default || m;
+    (() => {
+      const jsPDF = window.jspdf?.jsPDF || window.jsPDF;
+      if (!jsPDF) { alert('Error al generar PDF'); return; }
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       const dorado = [197, 160, 89];
       const negro = [15, 15, 15];
@@ -846,7 +847,7 @@ function PantallaProductos({ productos, onVolver }) {
       pdf.text('luisinabagnaroli.com.ar', 105, 291, { align: 'center' });
 
       pdf.save('lista-productos-lb.pdf');
-    }).catch(() => alert('Error al generar PDF'));
+    })();
   };
 
   if (vista === 'nuevo' || vista === 'editar') {
