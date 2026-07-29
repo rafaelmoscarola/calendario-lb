@@ -582,7 +582,7 @@ function FormEvento({ evento, fechaInicial, onVolver, onGuardar }) {
   const guardar = async () => {
     if (!titulo.trim() || !fecha) return;
     setGuardando(true);
-    await onGuardar({ tipo, titulo: titulo.trim(), fecha, hora, precio: precio.trim(), notas: notas.trim() });
+    await onGuardar({ tipo, titulo: titulo.trim(), fecha, hora, precio: precio.trim(), notas: notas.trim(), itemsAlquiler: tipo === 'alquiler' ? itemsAlquiler : [], descuentoAlquiler, envioAlquiler });
     setGuardando(false);
   };
 
@@ -639,6 +639,23 @@ function FormEvento({ evento, fechaInicial, onVolver, onGuardar }) {
 
         {/* Hora */}
         <CampoInput label="Hora (opcional)" type="time" value={hora} onChange={setHora} />
+
+        {/* Selector productos alquiler */}
+        {tipo === 'alquiler' && (
+          <SelectorProductosAlquilerDark
+            productos={productos}
+            items={itemsAlquiler}
+            setItems={setItemsAlquiler}
+            descuento={descuentoAlquiler}
+            setDescuento={setDescuentoAlquiler}
+            envio={envioAlquiler}
+            setEnvio={setEnvioAlquiler}
+            onAplicar={(texto, total) => {
+              setNotas(prev => texto || prev);
+              setPrecio(String(total));
+            }}
+          />
+        )}
 
         {/* Precio */}
         {(tipo === 'evento' || tipo === 'alquiler') && (
@@ -1002,6 +1019,172 @@ function FormProducto({ producto, onVolver }) {
           {guardando ? 'Guardando...' : esEdicion ? '✓ Guardar cambios' : '+ Crear producto'}
         </button>
       </div>
+    </div>
+  );
+}
+
+// ── SELECTOR PRODUCTOS ALQUILER (dark) ───────────────────────────────────────
+function SelectorProductosAlquilerDark({ productos, items, setItems, descuento, setDescuento, envio, setEnvio, onAplicar }) {
+  const [abierto, setAbierto] = React.useState(false);
+  const [busqueda, setBusqueda] = React.useState('');
+
+  const agregarProducto = (prod) => {
+    if (items.find(i => i.id === prod.id)) return;
+    setItems(prev => [...prev, {
+      id: prod.id,
+      nombre: prod.nombre,
+      material: prod.material,
+      color: prod.color,
+      medidas: prod.medidas,
+      otro: prod.otro,
+      precio: prod.precio,
+      precioCustom: prod.precio,
+      cantidad: 1,
+      disponible: prod.stock || 0
+    }]);
+  };
+
+  const actualizarItem = (id, campo, valor) => {
+    setItems(prev => prev.map(i => i.id === id ? { ...i, [campo]: valor } : i));
+  };
+
+  const quitarItem = (id) => setItems(prev => prev.filter(i => i.id !== id));
+
+  const subtotal = items.reduce((acc, i) => acc + (Number(i.precioCustom)||0) * (Number(i.cantidad)||1), 0);
+  const descuentoNum = Number(descuento) || 0;
+  const envioNum = Number(envio) || 0;
+  const total = subtotal - descuentoNum + envioNum;
+
+  const aplicar = () => {
+    const lineas = items.map(i => {
+      const cant = Number(i.cantidad) || 1;
+      const precio = Number(i.precioCustom) || 0;
+      const detalle = [i.material, i.color, i.medidas, i.otro].filter(Boolean).join(' · ');
+      return `${cant}x ${i.nombre}${detalle ? ` (${detalle})` : ''} — $${(precio * cant).toLocaleString('es-AR')}`;
+    });
+    if (descuentoNum > 0) lineas.push(`Descuento — -$${descuentoNum.toLocaleString('es-AR')}`);
+    if (envioNum > 0) lineas.push(`Envío — $${envioNum.toLocaleString('es-AR')}`);
+    lineas.push(`TOTAL: $${total.toLocaleString('es-AR')}`);
+    onAplicar(lineas.join('\n'), total);
+  };
+
+  const productosFiltrados = productos.filter(p =>
+    !items.find(i => i.id === p.id) &&
+    p.nombre?.toLowerCase().includes(busqueda.toLowerCase())
+  );
+
+  return (
+    <div style={{ marginBottom: '20px', border: '1.5px solid rgba(197,160,89,0.3)', borderRadius: '16px', overflow: 'hidden' }}>
+      <div onClick={() => setAbierto(p => !p)}
+        style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', background: 'rgba(197,160,89,0.1)' }}>
+        <div style={{ fontWeight: 700, color: '#c5a059', fontSize: '0.9rem' }}>
+          📦 Productos para alquiler {items.length > 0 ? `(${items.length})` : ''}
+        </div>
+        <div style={{ color: '#c5a059' }}>{abierto ? '▲' : '▼'}</div>
+      </div>
+
+      {abierto && (
+        <div style={{ padding: '16px 18px' }}>
+          <input value={busqueda} onChange={e => setBusqueda(e.target.value)}
+            placeholder="Buscar producto..."
+            style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '0.85rem', marginBottom: '10px', boxSizing: 'border-box' }}
+          />
+
+          {productosFiltrados.length > 0 && (
+            <div style={{ maxHeight: '160px', overflowY: 'auto', marginBottom: '14px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)' }}>
+              {productosFiltrados.map(p => (
+                <div key={p.id} onClick={() => agregarProducto(p)}
+                  style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#fff' }}>{p.nombre}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)' }}>{[p.material, p.color, p.medidas, p.otro].filter(Boolean).join(' · ')}</div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ color: '#c5a059', fontWeight: 700, fontSize: '0.85rem' }}>${Number(p.precio||0).toLocaleString('es-AR')}</div>
+                    <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.3)' }}>Stock: {p.stock}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {items.map(item => (
+            <div key={item.id} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '12px', marginBottom: '8px', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#fff' }}>{item.nombre}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)' }}>{[item.material, item.color, item.medidas, item.otro].filter(Boolean).join(' · ')}</div>
+                </div>
+                <button onClick={() => quitarItem(item.id)}
+                  style={{ background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', fontSize: '1.2rem' }}>×</button>
+              </div>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                <div>
+                  <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.4)', fontWeight: 700, marginBottom: '3px' }}>CANTIDAD (máx {item.disponible})</div>
+                  <input type="number" min="1" max={item.disponible} value={item.cantidad}
+                    onChange={e => actualizarItem(item.id, 'cantidad', Math.min(Number(e.target.value), item.disponible))}
+                    style={{ width: '75px', padding: '7px 8px', borderRadius: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: '0.9rem', fontWeight: 700 }}
+                  />
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.4)', fontWeight: 700, marginBottom: '3px' }}>PRECIO UNIT.</div>
+                  <input type="number" value={item.precioCustom}
+                    onChange={e => actualizarItem(item.id, 'precioCustom', Number(e.target.value))}
+                    style={{ width: '105px', padding: '7px 8px', borderRadius: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: '0.9rem' }}
+                  />
+                </div>
+                <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
+                  <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)' }}>Subtotal</div>
+                  <div style={{ fontWeight: 800, color: '#c5a059' }}>${((Number(item.precioCustom)||0)*(Number(item.cantidad)||1)).toLocaleString('es-AR')}</div>
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {items.length > 0 && (
+            <>
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '0.68rem', color: '#ff6b6b', fontWeight: 800, marginBottom: '4px' }}>DESCUENTO</div>
+                  <input type="number" value={descuento} onChange={e => setDescuento(e.target.value)} placeholder="0"
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', background: 'rgba(193,18,31,0.1)', border: '1.5px solid rgba(193,18,31,0.4)', color: '#ff6b6b', fontSize: '0.9rem', fontWeight: 700, boxSizing: 'border-box' }}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '0.68rem', color: '#40916c', fontWeight: 800, marginBottom: '4px' }}>ENVÍO</div>
+                  <input type="number" value={envio} onChange={e => setEnvio(e.target.value)} placeholder="0"
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', background: 'rgba(45,106,79,0.15)', border: '1.5px solid rgba(45,106,79,0.4)', color: '#40916c', fontSize: '0.9rem', fontWeight: 700, boxSizing: 'border-box' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '12px 14px', marginBottom: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', color: 'rgba(255,255,255,0.5)', marginBottom: '4px' }}>
+                  <span>Subtotal</span><span>${subtotal.toLocaleString('es-AR')}</span>
+                </div>
+                {descuentoNum > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', color: '#ff6b6b', fontWeight: 700, marginBottom: '4px' }}>
+                    <span>— Descuento</span><span>-${descuentoNum.toLocaleString('es-AR')}</span>
+                  </div>
+                )}
+                {envioNum > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', color: '#40916c', fontWeight: 700, marginBottom: '4px' }}>
+                    <span>+ Envío</span><span>${envioNum.toLocaleString('es-AR')}</span>
+                  </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', color: '#c5a059', fontWeight: 900, borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '8px', marginTop: '6px' }}>
+                  <span>TOTAL</span><span>${total.toLocaleString('es-AR')}</span>
+                </div>
+              </div>
+
+              <button onClick={aplicar}
+                style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'linear-gradient(135deg, #c5a059, #a3844a)', border: 'none', color: '#111', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer' }}>
+                ✓ Aplicar a notas y precio
+              </button>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
