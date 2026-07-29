@@ -42,6 +42,16 @@ const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
 const DIAS_SEMANA = ['D','L','M','X','J','V','S'];
 
 // ── APP ───────────────────────────────────────────────────────────────────────
+const enviarNotifInmediata = async (titulo, cuerpo) => {
+  try {
+    const r = await fetch('/api/notif-inmediata', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer lb-cron-2026' },
+      body: JSON.stringify({ titulo, cuerpo })
+    });
+  } catch(e) { console.error('notif error', e); }
+};
+
 export default function App() {
   const [token, setToken] = useState(() => localStorage.getItem('cal_token') || '');
   const [tokenInput, setTokenInput] = useState('');
@@ -296,6 +306,10 @@ function Calendario({ token, esAdmin, onLogout }) {
           creadoEn: new Date().toISOString(),
           cancelado: false,
         });
+        await enviarNotifInmediata(
+          `📅 Nuevo ${datos.tipo}: ${datos.titulo}`,
+          `Fecha: ${datos.fecha}${datos.hora ? ' � ' + datos.hora + ' hs' : ''}`
+        );
         setPantalla('calendario');
       }}
     />;
