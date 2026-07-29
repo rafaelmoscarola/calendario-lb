@@ -844,7 +844,10 @@ function PantallaProductos({ productos, onVolver }) {
       pdf.rect(0, 282, 210, 15, 'F');
       pdf.setTextColor(...dorado);
       pdf.setFontSize(8);
-      pdf.text('luisinabagnaroli.com.ar', 105, 291, { align: 'center' });
+      pdf.text('luisinabagnaroli.com.ar', 105, 289, { align: 'center' });
+      pdf.setFontSize(7);
+      pdf.setTextColor(180, 150, 80);
+      pdf.text('* Consulte disponibilidad   ** No incluye el costo de flete o traslado', 105, 294, { align: 'center' });
 
       pdf.save('lista-productos-lb.pdf');
     })();
